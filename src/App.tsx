@@ -36,7 +36,7 @@ import { ProfitView } from './components/ProfitView';
 import { DividendsView } from './components/DividendsView';
 import { EntryView } from './components/EntryView';
 import { GridCalculatorModal } from './components/GridCalculatorModal';
-import { EditRecordModal } from './components/EditRecordModal';
+import { EditRecordModal, EditableRecordType } from './components/EditRecordModal';
 import { FeeRuleConfigModal } from './components/FeeRuleConfigModal';
 
 export default function App() {
@@ -52,7 +52,7 @@ export default function App() {
   // Edit Record Modal State
   const [editingRecord, setEditingRecord] = useState<{
     record: TradeRecord | TPairRecord | DividendRecord;
-    recordType: 'TRADE' | 'T_PAIR' | 'DIVIDEND';
+    recordType: EditableRecordType;
   } | null>(null);
 
   // Fee Rules Config Modal State
@@ -525,9 +525,9 @@ export default function App() {
             onDeleteTrade={handleDeleteTrade}
             onDeleteTPair={handleDeleteTPair}
             onDeleteDividend={handleDeleteDividend}
-            onEditTrade={(tr) => setEditingRecord({ record: tr, recordType: 'TRADE' })}
-            onEditTPair={(tp) => setEditingRecord({ record: tp, recordType: 'T_PAIR' })}
-            onEditDividend={(div) => setEditingRecord({ record: div, recordType: 'DIVIDEND' })}
+            onEditTrade={(tr) => setEditingRecord({ record: tr, recordType: 'trade' })}
+            onEditTPair={(tp) => setEditingRecord({ record: tp, recordType: 'tpair' })}
+            onEditDividend={(div) => setEditingRecord({ record: div, recordType: 'dividend' })}
           />
         )}
 
@@ -551,7 +551,7 @@ export default function App() {
             trades={trades}
             positions={positions}
             onDeleteTPair={handleDeleteTPair}
-            onEditTPair={(tp) => setEditingRecord({ record: tp, recordType: 'T_PAIR' })}
+            onEditTPair={(tp) => setEditingRecord({ record: tp, recordType: 'tpair' })}
             onAutoPairFIFO={handleAutoPairFIFO}
             onNavigateToEntry={() => setActiveTab('entry')}
           />
@@ -572,7 +572,7 @@ export default function App() {
             fundMetas={fundMetas}
             onAddDividend={handleAddDividend}
             onDeleteDividend={handleDeleteDividend}
-            onEditDividend={(div) => setEditingRecord({ record: div, recordType: 'DIVIDEND' })}
+            onEditDividend={(div) => setEditingRecord({ record: div, recordType: 'dividend' })}
           />
         )}
 
@@ -590,8 +590,8 @@ export default function App() {
             onAddTPair={handleAddTPair}
             onBatchImportTrades={handleBatchImportTrades}
             onOpenFeeConfigModal={() => setIsFeeConfigOpen(true)}
-            onEditTrade={(tr) => setEditingRecord({ record: tr, recordType: 'TRADE' })}
-            onEditTPair={(tp) => setEditingRecord({ record: tp, recordType: 'T_PAIR' })}
+            onEditTrade={(tr) => setEditingRecord({ record: tr, recordType: 'trade' })}
+            onEditTPair={(tp) => setEditingRecord({ record: tp, recordType: 'tpair' })}
             onDeleteTrade={handleDeleteTrade}
             onDeleteTPair={handleDeleteTPair}
           />
@@ -608,8 +608,10 @@ export default function App() {
       {/* Universal Edit Record Modal */}
       <EditRecordModal
         isOpen={!!editingRecord}
-        record={editingRecord?.record || null}
-        recordType={editingRecord?.recordType || null}
+        recordData={editingRecord?.record || null}
+        recordType={editingRecord?.recordType || 'trade'}
+        feeRules={feeRules}
+        fundMetas={fundMetas}
         onClose={() => setEditingRecord(null)}
         onSaveTrade={handleUpdateTrade}
         onSaveTPair={handleUpdateTPair}

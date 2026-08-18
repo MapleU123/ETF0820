@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -273,13 +273,32 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400">
                 <CalendarIcon className="w-5 h-5" />
               </div>
-              <div>
-                <h2 className="text-lg font-bold text-white tracking-tight">
-                  {year}年 {monthNames[month]}
-                </h2>
-                <p className="text-xs text-slate-400">
-                  点击日期查看成交与做T收益明细
-                </p>
+              <div className="flex items-center gap-2">
+                {/* Quick Year Selector */}
+                <select
+                  value={year}
+                  onChange={(e) => setCurrentDate(new Date(Number(e.target.value), month, 1))}
+                  className="bg-slate-800 border border-slate-700 text-white font-bold text-base sm:text-lg rounded-lg px-2 py-1 outline-none focus:border-emerald-500 cursor-pointer"
+                >
+                  {Array.from({ length: 7 }, (_, i) => new Date().getFullYear() - 3 + i).map((y) => (
+                    <option key={y} value={y} className="bg-slate-900 text-white">
+                      {y}年
+                    </option>
+                  ))}
+                </select>
+
+                {/* Quick Month Selector */}
+                <select
+                  value={month}
+                  onChange={(e) => setCurrentDate(new Date(year, Number(e.target.value), 1))}
+                  className="bg-slate-800 border border-slate-700 text-white font-bold text-base sm:text-lg rounded-lg px-2 py-1 outline-none focus:border-emerald-500 cursor-pointer"
+                >
+                  {monthNames.map((name, idx) => (
+                    <option key={name} value={idx} className="bg-slate-900 text-white">
+                      {name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
