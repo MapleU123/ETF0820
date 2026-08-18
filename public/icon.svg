@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#020617"/>
+      <stop offset="50%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#022c22"/>
+    </linearGradient>
+    <linearGradient id="iconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+  </defs>
+  <!-- Background with rounded corners -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)"/>
+  <rect width="504" height="504" x="4" y="4" rx="108" fill="none" stroke="#10b981" stroke-width="6" opacity="0.3"/>
+
+  <!-- Logo Graphics: Layered Candlesticks & Grid Waves -->
+  <g transform="translate(106, 106) scale(0.585)" stroke="url(#iconGrad)" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- Grid Pattern -->
+    <path d="M 60 120 L 452 120" stroke="#334155" stroke-width="12" stroke-dasharray="16 16"/>
+    <path d="M 60 256 L 452 256" stroke="#334155" stroke-width="12" stroke-dasharray="16 16"/>
+    <path d="M 60 392 L 452 392" stroke="#334155" stroke-width="12" stroke-dasharray="16 16"/>
+
+    <!-- T Lightning / Upward Profit Trend -->
+    <path d="M 90 380 L 190 220 L 270 300 L 420 120" stroke="url(#iconGrad)" stroke-width="36"/>
+    <polyline points="350,120 420,120 420,190" stroke="url(#iconGrad)" stroke-width="36" fill="none"/>
+
+    <!-- Candlestick indicators -->
+    <line x1="190" y1="180" x2="190" y2="280" stroke="#34d399" stroke-width="16"/>
+    <rect x="175" y="200" width="30" height="50" rx="6" fill="#34d399" stroke="#34d399" stroke-width="8"/>
+
+    <line x1="270" y1="260" x2="270" y2="350" stroke="#f43f5e" stroke-width="16"/>
+    <rect x="255" y="280" width="30" height="40" rx="6" fill="#f43f5e" stroke="#f43f5e" stroke-width="8"/>
+  </g>
+</svg>

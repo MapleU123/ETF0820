@@ -1,0 +1,10 @@
+{
+  "name": "网格做T记录器",
+  "description": "专业基金与ETF网格交易、日内做T记录器，支持日历看板、持仓跟踪、做T统计分析、收益图表、分红管理及AI拍照识别/CSV导入",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
