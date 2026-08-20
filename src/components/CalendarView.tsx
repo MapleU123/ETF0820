@@ -126,9 +126,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       }
     >();
 
-    tPairs.forEach((tp) => {
-      // Attribute profit to sellDate (when the T is realized)
-      const dateKey = tp.sellDate || tp.buyDate;
+    const getOrCreate = (dateKey: string) => {
       if (!map.has(dateKey)) {
         map.set(dateKey, {
           tPairs: [],
@@ -139,41 +137,36 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           totalFees: 0,
         });
       }
-      const item = map.get(dateKey)!;
+      return map.get(dateKey)!;
+    };
+
+    tPairs.forEach((tp) => {
+      // Attribute profit to sellDate (when the T is realized) or buyDate
+      const dateKey = tp.sellDate || tp.buyDate;
+      const item = getOrCreate(dateKey);
       item.tPairs.push(tp);
       item.netProfit += tp.netProfit;
       item.grossProfit += tp.grossProfit;
-      item.totalFees += tp.totalFees;
     });
 
     trades.forEach((tr) => {
       const dateKey = tr.date;
-      if (!map.has(dateKey)) {
-        map.set(dateKey, {
-          tPairs: [],
-          trades: [],
-          dividends: [],
-          netProfit: 0,
-          grossProfit: 0,
-          totalFees: 0,
-        });
+      const item = getOrCreate(dateKey);
+      item.trades.push(tr);
+      item.totalFees += tr.fee || 0;
+    });
+
+    // Fallback: if totalFees is 0 and day has tPairs, sum tp.totalFees
+    map.forEach((item) => {
+      if (item.totalFees === 0 && item.tPairs.length > 0) {
+        item.totalFees = item.tPairs.reduce((sum, tp) => sum + (tp.totalFees || 0), 0);
       }
-      map.get(dateKey)!.trades.push(tr);
     });
 
     dividends.forEach((div) => {
       const dateKey = div.date;
-      if (!map.has(dateKey)) {
-        map.set(dateKey, {
-          tPairs: [],
-          trades: [],
-          dividends: [],
-          netProfit: 0,
-          grossProfit: 0,
-          totalFees: 0,
-        });
-      }
-      map.get(dateKey)!.dividends.push(div);
+      const item = getOrCreate(dateKey);
+      item.dividends.push(div);
     });
 
     return map;
@@ -464,9 +457,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                               : 'text-slate-300'
                           }`}
                         >
-                          {dayData.netProfit > 0
-                            ? `+¥${Math.round(dayData.netProfit)}`
-                            : `¥${Math.round(dayData.netProfit)}`}
+                          {formatMoney(dayData.netProfit, true)}
                         </span>
                         <span className="text-[9px] text-slate-400 block font-normal">
                           {dayData.tPairs.length} 笔做T

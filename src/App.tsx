@@ -25,6 +25,7 @@ import {
 import {
   calculatePositionSummaries,
   autoPairTradesFIFO,
+  synchronizeTradesAndTPairs,
 } from './utils/calculations';
 
 // Components
@@ -91,6 +92,20 @@ export default function App() {
     saveFeeRules(feeRules);
   }, [feeRules]);
 
+  // Auto-sync trades and TPairs on initialization to pair any pending single trades
+  useEffect(() => {
+    const { syncedTPairs, syncedTrades } = synchronizeTradesAndTPairs(trades, tPairs);
+    if (
+      syncedTPairs.length !== tPairs.length ||
+      JSON.stringify(syncedTPairs) !== JSON.stringify(tPairs)
+    ) {
+      setTPairs(syncedTPairs);
+      saveTPairs(syncedTPairs);
+      setTrades(syncedTrades);
+      saveTrades(syncedTrades);
+    }
+  }, []);
+
   // Dynamic Portfolio Summaries
   const positions = useMemo(() => {
     return calculatePositionSummaries(trades, tPairs, dividends, fundMetas);
@@ -111,13 +126,14 @@ export default function App() {
 
   // --- Handlers ---
 
-  // Add Single Trade
+  // Add Single Trade (Automatically triggers real-time matching and updates realized profit)
   const handleAddTrade = (newTrade: TradeRecord) => {
-    setTrades((prev) => {
-      const updated = [newTrade, ...prev];
-      saveTrades(updated);
-      return updated;
-    });
+    const updatedTradesRaw = [newTrade, ...trades];
+    const { syncedTPairs, syncedTrades } = synchronizeTradesAndTPairs(updatedTradesRaw, tPairs);
+    setTrades(syncedTrades);
+    saveTrades(syncedTrades);
+    setTPairs(syncedTPairs);
+    saveTPairs(syncedTPairs);
 
     // ensure fund meta exists
     if (!fundMetas.some((m) => m.code === newTrade.fundCode)) {
@@ -139,11 +155,8 @@ export default function App() {
 
   // Add T-Pair (and create the 2 underlying trade legs)
   const handleAddTPair = (newTPair: TPairRecord, createIndependentTrades: boolean = true) => {
-    setTPairs((prev) => {
-      const updated = [newTPair, ...prev];
-      saveTPairs(updated);
-      return updated;
-    });
+    const newTPairsList = [newTPair, ...tPairs];
+    let newTradesList = trades;
 
     if (createIndependentTrades) {
       const buyLeg: TradeRecord = {
@@ -178,12 +191,14 @@ export default function App() {
         createdAt: new Date().toISOString(),
       };
 
-      setTrades((prev) => {
-        const updated = [buyLeg, sellLeg, ...prev];
-        saveTrades(updated);
-        return updated;
-      });
+      newTradesList = [buyLeg, sellLeg, ...trades];
     }
+
+    const { syncedTPairs, syncedTrades } = synchronizeTradesAndTPairs(newTradesList, newTPairsList);
+    setTPairs(syncedTPairs);
+    saveTPairs(syncedTPairs);
+    setTrades(syncedTrades);
+    saveTrades(syncedTrades);
 
     // update fund meta
     setFundMetas((prev) => {
@@ -213,20 +228,22 @@ export default function App() {
 
   // Update Trade
   const handleUpdateTrade = (updatedTrade: TradeRecord) => {
-    setTrades((prev) => {
-      const updated = prev.map((t) => (t.id === updatedTrade.id ? updatedTrade : t));
-      saveTrades(updated);
-      return updated;
-    });
+    const updatedTradesRaw = trades.map((t) => (t.id === updatedTrade.id ? updatedTrade : t));
+    const { syncedTPairs, syncedTrades } = synchronizeTradesAndTPairs(updatedTradesRaw, tPairs);
+    setTrades(syncedTrades);
+    saveTrades(syncedTrades);
+    setTPairs(syncedTPairs);
+    saveTPairs(syncedTPairs);
   };
 
   // Update T-Pair
   const handleUpdateTPair = (updatedTPair: TPairRecord) => {
-    setTPairs((prev) => {
-      const updated = prev.map((tp) => (tp.id === updatedTPair.id ? updatedTPair : tp));
-      saveTPairs(updated);
-      return updated;
-    });
+    const updatedTPairsRaw = tPairs.map((tp) => (tp.id === updatedTPair.id ? updatedTPair : tp));
+    const { syncedTPairs, syncedTrades } = synchronizeTradesAndTPairs(trades, updatedTPairsRaw);
+    setTPairs(syncedTPairs);
+    saveTPairs(syncedTPairs);
+    setTrades(syncedTrades);
+    saveTrades(syncedTrades);
   };
 
   // Update Dividend
@@ -246,11 +263,12 @@ export default function App() {
 
   // Batch Import Trades (from CSV or OCR)
   const handleBatchImportTrades = (newTrades: TradeRecord[]) => {
-    setTrades((prev) => {
-      const updated = [...newTrades, ...prev];
-      saveTrades(updated);
-      return updated;
-    });
+    const updatedTradesRaw = [...newTrades, ...trades];
+    const { syncedTPairs, syncedTrades } = synchronizeTradesAndTPairs(updatedTradesRaw, tPairs);
+    setTrades(syncedTrades);
+    saveTrades(syncedTrades);
+    setTPairs(syncedTPairs);
+    saveTPairs(syncedTPairs);
 
     // Update fund metas
     newTrades.forEach((t) => {
@@ -275,20 +293,14 @@ export default function App() {
 
   // Auto-Pair FIFO Matching from unpaired trades
   const handleAutoPairFIFO = () => {
-    const { newTPairs, updatedTrades } = autoPairTradesFIFO(trades);
-    if (newTPairs.length === 0) {
-      alert('当前没有可配对的买卖记录。请先添加同标的的买入与卖出流水。');
-      return;
-    }
+    const { syncedTPairs, syncedTrades } = synchronizeTradesAndTPairs(trades, tPairs);
+    const newMatchedCount = syncedTPairs.length - tPairs.filter((tp) => !tp.id.startsWith('tp-auto-')).length;
 
-    setTPairs((prev) => {
-      const updated = [...newTPairs, ...prev];
-      saveTPairs(updated);
-      return updated;
-    });
-    setTrades(updatedTrades);
-    saveTrades(updatedTrades);
-    alert(`智能算法已成功自动配对 ${newTPairs.length} 笔做T记录！已加入T统计分析。`);
+    setTPairs(syncedTPairs);
+    saveTPairs(syncedTPairs);
+    setTrades(syncedTrades);
+    saveTrades(syncedTrades);
+    alert(`智能算法已更新配对！当前共有 ${syncedTPairs.length} 笔做T记录，收益已全量同步到日历、收益和持仓。`);
   };
 
   // Manual Add or Edit Position (Directly manage base holding quantity and cost)
@@ -388,21 +400,23 @@ export default function App() {
   // Delete Handlers
   const handleDeleteTrade = (id: string) => {
     if (window.confirm('确定删除该笔交易记录吗？')) {
-      setTrades((prev) => {
-        const updated = prev.filter((t) => t.id !== id);
-        saveTrades(updated);
-        return updated;
-      });
+      const updatedTradesRaw = trades.filter((t) => t.id !== id);
+      const { syncedTPairs, syncedTrades } = synchronizeTradesAndTPairs(updatedTradesRaw, tPairs);
+      setTrades(syncedTrades);
+      saveTrades(syncedTrades);
+      setTPairs(syncedTPairs);
+      saveTPairs(syncedTPairs);
     }
   };
 
   const handleDeleteTPair = (id: string) => {
     if (window.confirm('确定删除该做T记录吗？')) {
-      setTPairs((prev) => {
-        const updated = prev.filter((p) => p.id !== id);
-        saveTPairs(updated);
-        return updated;
-      });
+      const updatedTPairsRaw = tPairs.filter((p) => p.id !== id);
+      const { syncedTPairs, syncedTrades } = synchronizeTradesAndTPairs(trades, updatedTPairsRaw);
+      setTPairs(syncedTPairs);
+      saveTPairs(syncedTPairs);
+      setTrades(syncedTrades);
+      saveTrades(syncedTrades);
     }
   };
 

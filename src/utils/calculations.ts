@@ -256,7 +256,7 @@ export function autoPairTradesFIFO(trades: TradeRecord[], existingTPairIds?: Set
   const updatedTrades = trades.map((t) => ({ ...t }));
   const tradesByFund = new Map<string, TradeRecord[]>();
 
-  // Filter out trades already paired
+  // Filter out trades already paired with existing manual T-Pairs
   updatedTrades.forEach((t) => {
     if (t.matchedTPairId && existingTPairIds && existingTPairIds.has(t.matchedTPairId)) return;
     if (!tradesByFund.has(t.fundCode)) {
@@ -266,8 +266,16 @@ export function autoPairTradesFIFO(trades: TradeRecord[], existingTPairIds?: Set
   });
 
   tradesByFund.forEach((fundTrades) => {
-    // Sort trades by date + time ascending
-    fundTrades.sort((a, b) => `${a.date} ${a.time || ''}`.localeCompare(`${b.date} ${b.time || ''}`));
+    // Sort trades chronologically: date asc, then time asc (if time exists)
+    fundTrades.sort((a, b) => {
+      const dateA = a.date || '';
+      const dateB = b.date || '';
+      if (dateA !== dateB) return dateA.localeCompare(dateB);
+      const timeA = a.time || '12:00:00';
+      const timeB = b.time || '12:00:00';
+      if (timeA !== timeB) return timeA.localeCompare(timeB);
+      return (a.createdAt || '').localeCompare(b.createdAt || '');
+    });
 
     const buys: { trade: TradeRecord; remainingQty: number }[] = [];
     const sells: { trade: TradeRecord; remainingQty: number }[] = [];
@@ -294,19 +302,25 @@ export function autoPairTradesFIFO(trades: TradeRecord[], existingTPairIds?: Set
         continue;
       }
 
-      const isPositiveT = `${b.trade.date} ${b.trade.time || ''}` <= `${s.trade.date} ${s.trade.time || ''}`;
-      const buyFeePortion = (b.trade.fee / b.trade.quantity) * matchQty;
-      const sellFeePortion = (s.trade.fee / s.trade.quantity) * matchQty;
+      const bTimeStr = `${b.trade.date} ${b.trade.time || '09:30:00'}`;
+      const sTimeStr = `${s.trade.date} ${s.trade.time || '15:00:00'}`;
+      const isPositiveT = bTimeStr <= sTimeStr;
+
+      const buyFeePortion = b.trade.quantity > 0 ? (b.trade.fee / b.trade.quantity) * matchQty : 0;
+      const sellFeePortion = s.trade.quantity > 0 ? (s.trade.fee / s.trade.quantity) * matchQty : 0;
       const totalFees = Math.round((buyFeePortion + sellFeePortion) * 100) / 100;
       const grossProfit = Math.round((s.trade.price - b.trade.price) * matchQty * 100) / 100;
       const netProfit = Math.round((grossProfit - totalFees) * 100) / 100;
-      const profitRate = Math.round((netProfit / (b.trade.price * matchQty)) * 10000) / 100;
-      const pairId = `tp-auto-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+      const profitRate =
+        b.trade.price * matchQty > 0
+          ? Math.round((netProfit / (b.trade.price * matchQty)) * 10000) / 100
+          : 0;
+      const pairId = `tp-auto-${b.trade.id}-${s.trade.id}-${matchQty}`;
 
       const newPair: TPairRecord = {
         id: pairId,
         fundCode: b.trade.fundCode,
-        fundName: b.trade.fundName,
+        fundName: b.trade.fundName || s.trade.fundName,
         tType: isPositiveT ? 'POSITIVE_T' : 'REVERSE_T',
         buyDate: b.trade.date,
         buyTime: b.trade.time,
@@ -323,8 +337,8 @@ export function autoPairTradesFIFO(trades: TradeRecord[], existingTPairIds?: Set
         totalFees,
         netProfit,
         profitRate,
-        notes: `智能FIFO匹配做T (${isPositiveT ? '正T' : '倒T'})`,
-        createdAt: new Date().toISOString(),
+        notes: `智能FIFO匹配做T (${isPositiveT ? '正T(先买后卖)' : '倒T(先卖后买)'})`,
+        createdAt: s.trade.createdAt || new Date().toISOString(),
       };
 
       newPairs.push(newPair);
@@ -341,4 +355,45 @@ export function autoPairTradesFIFO(trades: TradeRecord[], existingTPairIds?: Set
   });
 
   return { newTPairs: newPairs, updatedTrades };
+}
+
+/**
+ * Synchronize standalone trades and T-Pairs automatically so all views (Calendar, Profit, Stats, Holdings)
+ * reflect realized profit immediately without manual button clicks.
+ */
+export function synchronizeTradesAndTPairs(
+  trades: TradeRecord[],
+  tPairs: TPairRecord[]
+): {
+  syncedTPairs: TPairRecord[];
+  syncedTrades: TradeRecord[];
+} {
+  // 1. Keep manual/explicit T-Pairs (not generated automatically)
+  const manualTPairs = tPairs.filter((tp) => !tp.id.startsWith('tp-auto-'));
+  const manualPairIds = new Set(manualTPairs.map((tp) => tp.id));
+
+  // 2. Prepare trades to match, keeping manual pointers
+  const updatedTrades = trades.map((t) => {
+    if (t.matchedTPairId && manualPairIds.has(t.matchedTPairId)) {
+      return { ...t };
+    }
+    const copy = { ...t };
+    delete copy.matchedTPairId;
+    return copy;
+  });
+
+  // 3. Match remaining trades via FIFO
+  const { newTPairs, updatedTrades: matchedTrades } = autoPairTradesFIFO(
+    updatedTrades,
+    manualPairIds
+  );
+
+  const syncedTPairs = [...manualTPairs, ...newTPairs].sort((a, b) => {
+    const dateA = a.sellDate || a.buyDate || '';
+    const dateB = b.sellDate || b.buyDate || '';
+    if (dateA !== dateB) return dateB.localeCompare(dateA);
+    return (b.createdAt || '').localeCompare(a.createdAt || '');
+  });
+
+  return { syncedTPairs, syncedTrades: matchedTrades };
 }
