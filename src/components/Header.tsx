@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import avatarImg from '../assets/images/app_avatar_icon_1787244504437.jpg';
 import {
   Calendar as CalendarIcon,
   Briefcase,
@@ -11,6 +12,9 @@ import {
   UploadCloud,
   Layers,
   Calculator,
+  Settings,
+  X,
+  Sparkles,
 } from 'lucide-react';
 import { TabKey } from '../types';
 import { formatMoney } from '../utils/calculations';
@@ -25,6 +29,7 @@ interface HeaderProps {
   onImportBackup: (json: string) => void;
   onClearAllData: () => void;
   onOpenCalculator?: () => void;
+  onOpenFeeConfig?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -37,8 +42,10 @@ export const Header: React.FC<HeaderProps> = ({
   onImportBackup,
   onClearAllData,
   onOpenCalculator,
+  onOpenFeeConfig,
 }) => {
   const [showBackupModal, setShowBackupModal] = useState(false);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [backupJsonInput, setBackupJsonInput] = useState('');
 
   const tabs: { id: TabKey; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
@@ -64,16 +71,28 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center justify-between h-16">
           {/* Logo & Branding */}
           <div className="flex items-center space-x-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-emerald-500/20 ring-1 ring-white/20">
-              <Layers className="w-5 h-5 text-white" />
-            </div>
+            <button
+              id="app-avatar-btn"
+              type="button"
+              onClick={() => setShowAvatarModal(true)}
+              title="点击查看/下载高清应用头像"
+              className="h-10 w-10 rounded-xl overflow-hidden shadow-lg shadow-emerald-500/20 ring-1 ring-emerald-500/40 hover:ring-2 hover:ring-cyan-400 transition-all cursor-pointer group relative shrink-0"
+            >
+              <img
+                src={avatarImg}
+                alt="ETF网格做T记录器头像"
+                referrerPolicy="no-referrer"
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
+              />
+              <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
+            </button>
             <div>
               <div className="flex items-center space-x-2">
                 <h1 className="text-base sm:text-lg font-black text-white tracking-tight">
                   网格做T记录器
                 </h1>
-                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-1.5 py-0.5 rounded border border-emerald-500/30">
-                  ETF/基金版
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded border border-emerald-500/30 font-mono tracking-wider">
+                  ETF08212
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 hidden sm:block">
@@ -112,6 +131,18 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Right Action Tools */}
           <div className="flex items-center space-x-2">
+            {onOpenFeeConfig && (
+              <button
+                id="header-fee-config-btn"
+                onClick={onOpenFeeConfig}
+                title="设置交易费率 (免五/万1/最低0.2元/印花税)"
+                className="p-2 text-slate-400 hover:text-amber-300 hover:bg-slate-800 rounded-xl transition-colors cursor-pointer flex items-center gap-1 text-xs"
+              >
+                <Settings className="w-4 h-4 text-amber-400" />
+                <span className="hidden sm:inline">费率设置</span>
+              </button>
+            )}
+
             {onOpenCalculator && (
               <button
                 id="header-grid-calc-btn"
@@ -218,6 +249,61 @@ export const Header: React.FC<HeaderProps> = ({
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Avatar Preview Modal */}
+      {showAvatarModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95 duration-150 text-center relative overflow-hidden">
+            {/* Background Glow */}
+            <div className="absolute -top-24 -left-24 w-48 h-48 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none" />
+
+            <button
+              onClick={() => setShowAvatarModal(false)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold mb-4">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>ETF 网格交易专属头像</span>
+            </div>
+
+            {/* High-res Avatar Image */}
+            <div className="relative mx-auto w-48 h-48 sm:w-56 sm:h-56 rounded-3xl overflow-hidden p-1 bg-gradient-to-tr from-emerald-500 via-teal-400 to-cyan-500 shadow-2xl shadow-emerald-500/30 mb-4">
+              <img
+                src={avatarImg}
+                alt="ETF网格做T记录器高清头像"
+                referrerPolicy="no-referrer"
+                className="w-full h-full object-cover rounded-[22px]"
+              />
+            </div>
+
+            <h4 className="text-base font-bold text-white mb-1">ETF08212 · 网格做T记录器</h4>
+            <p className="text-xs text-slate-400 mb-5 leading-relaxed">
+              3D 金融质感设计：融入量化网格、收益上升曲线与 K 线阶梯元素，契合专业做 T 与成本摊薄主题。
+            </p>
+
+            <div className="flex gap-2">
+              <a
+                href={avatarImg}
+                download="etf-grid-t-avatar.jpg"
+                className="flex-1 py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
+              >
+                <Download className="w-4 h-4" />
+                <span>下载/保存头像</span>
+              </a>
+              <button
+                type="button"
+                onClick={() => setShowAvatarModal(false)}
+                className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-xs transition-colors"
+              >
+                关闭
+              </button>
             </div>
           </div>
         </div>

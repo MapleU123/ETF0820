@@ -72,7 +72,8 @@ export const EntryView: React.FC<EntryViewProps> = ({
 
   // Selected Asset Class & Fee Rule
   const [selectedFeeRuleId, setSelectedFeeRuleId] = useState<string>(() => {
-    return feeRules[0]?.id || 'fee-etf-default';
+    const defaultRule = feeRules.find((r) => r.isDefault);
+    return defaultRule?.id || feeRules[0]?.id || 'fee-etf-w1-min02';
   });
 
   const activeFeeRule = feeRules.find((r) => r.id === selectedFeeRuleId) || feeRules[0];

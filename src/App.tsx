@@ -526,6 +526,7 @@ export default function App() {
           setCalculatorFund(positions[0] || null);
           setIsCalculatorOpen(true);
         }}
+        onOpenFeeConfig={() => setIsFeeConfigOpen(true)}
       />
 
       {/* Main Tab Content */}

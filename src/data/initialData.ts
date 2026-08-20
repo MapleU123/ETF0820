@@ -22,6 +22,19 @@ export const POPULAR_FUNDS: { code: string; name: string; defaultPrice: number; 
 
 export const DEFAULT_COMPREHENSIVE_FEE_RULES: ComprehensiveFeeRule[] = [
   {
+    id: 'fee-etf-w1-min02',
+    name: 'ETF/LOF 基金 (万1 最低0.2元)',
+    assetClass: 'ETF',
+    buyCommissionTenThousandth: 1.0,
+    buyMinFee: 0.2,
+    sellCommissionTenThousandth: 1.0,
+    sellMinFee: 0.2,
+    stampDutyTenThousandth: 0,
+    transferFeeTenThousandth: 0,
+    isDefault: true,
+    notes: 'ETF/LOF免印花税与过户费，万1佣金免5，最低0.2元起步(不足0.2元按0.2元收)',
+  },
+  {
     id: 'fee-etf-default',
     name: 'ETF/LOF 基金 (万0.5 免五)',
     assetClass: 'ETF',
@@ -31,8 +44,7 @@ export const DEFAULT_COMPREHENSIVE_FEE_RULES: ComprehensiveFeeRule[] = [
     sellMinFee: 0,
     stampDutyTenThousandth: 0,
     transferFeeTenThousandth: 0,
-    isDefault: true,
-    notes: 'ETF/LOF免印花税、免过户费，买卖均为万0.5免五',
+    notes: 'ETF/LOF免印花税、免过户费，买卖均为万0.5免五(无最低门槛)',
   },
   {
     id: 'fee-stock-low',
