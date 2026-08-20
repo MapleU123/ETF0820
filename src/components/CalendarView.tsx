@@ -58,6 +58,38 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     return d.toISOString().split('T')[0];
   });
 
+  // Keep calendar month aligned with latest input if records are dynamically updated
+  useEffect(() => {
+    // Check latest record date across tPairs, trades, dividends
+    const dates: string[] = [];
+    tPairs.forEach((tp) => {
+      if (tp.sellDate) dates.push(tp.sellDate);
+      if (tp.buyDate) dates.push(tp.buyDate);
+    });
+    trades.forEach((tr) => {
+      if (tr.date) dates.push(tr.date);
+    });
+    dividends.forEach((d) => {
+      if (d.date) dates.push(d.date);
+    });
+
+    if (dates.length > 0) {
+      const sortedDates = dates.sort((a, b) => b.localeCompare(a));
+      const latestDate = sortedDates[0];
+      if (latestDate) {
+        const parts = latestDate.split('-');
+        if (parts.length >= 2) {
+          const y = parseInt(parts[0], 10);
+          const m = parseInt(parts[1], 10) - 1;
+          if (!isNaN(y) && !isNaN(m)) {
+            setCurrentDate(new Date(y, m, 1));
+          }
+        }
+        setSelectedDate(latestDate);
+      }
+    }
+  }, [tPairs.length, trades.length, dividends.length]);
+
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth(); // 0-indexed
 
